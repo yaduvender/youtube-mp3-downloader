@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tape — yt to mp3</title>
+<style>
+  :root {
+    --bg: #15140f;
+    --card: #1d1c16;
+    --line: #34321f;
+    --cream: #ece7d9;
+    --muted: #8d8975;
+    --amber: #e0a23a;
+    --amber-dim: #6b5526;
+    --error: #d9685a;
+    --success: #7fae6f;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(224,162,58,0.06), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(224,162,58,0.04), transparent 40%);
+    color: var(--cream);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .deck {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin: 0 0 6px 2px;
+  }
+
+  h1 {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 28px 2px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 24px;
+  }
+
+  label {
+    display: block;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  input[type="text"] {
+    flex: 1;
+    background: #121109;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--cream);
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+
+  input[type="text"]:focus {
+    border-color: var(--amber);
+  }
+
+  input[type="text"]::placeholder {
+    color: var(--muted);
+  }
+
+  button {
+    background: var(--amber);
+    color: #1a1407;
+    border: none;
+    border-radius: 8px;
+    padding: 0 20px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.1s ease, background 0.15s ease;
+  }
+
+  button:hover:not(:disabled) { background: #ecb158; }
+  button:active:not(:disabled) { transform: scale(0.97); }
+  button:disabled { background: var(--amber-dim); color: #6b6655; cursor: not-allowed; }
+
+  .status-block {
+    margin-top: 20px;
+    display: none;
+  }
+
+  .status-block.visible { display: block; }
+
+  .reel-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .reel {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 3px solid var(--line);
+    border-top-color: var(--amber);
+    animation: spin 0.9s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status-text {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 13px;
+    color: var(--cream);
+  }
+
+  .status-text.error { color: var(--error); }
+  .status-text.success { color: var(--success); }
+
+  .progress-track {
+    height: 6px;
+    background: var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--amber);
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  .download-btn {
+    display: none;
+    margin-top: 14px;
+    width: 100%;
+    text-align: center;
+    text-decoration: none;
+    background: var(--success);
+    color: #0f1a0d;
+    border-radius: 8px;
+    padding: 12px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 13px;
+  }
+
+  .download-btn.visible { display: block; }
+
+  .note {
+    margin-top: 18px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+  <div class="eyebrow">side a / track 01</div>
+  <h1>YouTube → MP3</h1>
+  <p class="sub">Paste a video or playlist link you have the rights to download.</p>
+
+  <div class="card">
+    <label for="url">source url</label>
+    <div class="input-row">
+      <input type="text" id="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
+      <button id="go-btn">Convert</button>
+    </div>
+
+    <div class="status-block" id="status-block">
+      <div class="reel-row">
+        <div class="reel" id="reel"></div>
+        <div class="status-text" id="status-text">Queued…</div>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <a href="#" id="download-link" class="download-btn">Download MP3</a>
+  </div>
+
+  <p class="note">
+    Only download content you own, that's Creative Commons / public domain,
+    or that you otherwise have permission to download. This tool doesn't
+    bypass YouTube restrictions on private or age-gated videos.
+  </p>
+</div>
+
+<script>
+  const urlInput = document.getElementById('url');
+  const goBtn = document.getElementById('go-btn');
+  const statusBlock = document.getElementById('status-block');
+  const statusText = document.getElementById('status-text');
+  const reel = document.getElementById('reel');
+  const progressFill = document.getElementById('progress-fill');
+  const downloadLink = document.getElementById('download-link');
+
+  let pollTimer = null;
+
+  function resetUI() {
+    statusBlock.classList.remove('visible');
+    downloadLink.classList.remove('visible');
+    statusText.classList.remove('error', 'success');
+    progressFill.style.width = '0%';
+    reel.style.display = 'block';
+  }
+
+  async function startDownload() {
+    const url = urlInput.value.trim();
+    if (!url) return;
+
+    resetUI();
+    statusBlock.classList.add('visible');
+    statusText.textContent = 'Queued…';
+    goBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(data.error || 'Something went wrong.');
+        return;
+      }
+
+      poll(data.job_id);
+    } catch (err) {
+      showError('Could not reach the server.');
+    }
+  }
+
+  function poll(jobId) {
+    pollTimer = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/status/${jobId}`);
+        const data = await res.json();
+
+        if (data.status === 'downloading') {
+          statusText.textContent = data.progress ? `Converting… ${data.progress}` : 'Converting…';
+          if (data.progress) {
+            const pct = parseFloat(data.progress.replace('%', '')) || 0;
+            progressFill.style.width = pct + '%';
+          }
+        } else if (data.status === 'done') {
+          clearInterval(pollTimer);
+          reel.style.display = 'none';
+          progressFill.style.width = '100%';
+          statusText.textContent = 'Done.';
+          statusText.classList.add('success');
+          downloadLink.href = `/api/file/${jobId}`;
+          downloadLink.classList.add('visible');
+          goBtn.disabled = false;
+        } else if (data.status === 'error') {
+          clearInterval(pollTimer);
+          showError(data.error || 'Conversion failed.');
+        }
+      } catch (err) {
+        clearInterval(pollTimer);
+        showError('Lost connection while converting.');
+      }
+    }, 1500);
+  }
+
+  function showError(message) {
+    reel.style.display = 'none';
+    statusText.textContent = message;
+    statusText.classList.add('error');
+    goBtn.disabled = false;
+  }
+
+  goBtn.addEventListener('click', startDownload);
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') startDownload();
+  });
+</script>
+
+</body>
+</html>
