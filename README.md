@@ -1,7 +1,5 @@
 # YouTube → MP3 Downloader
 
-!\[App screenshot](screenshot.png)
-
 A small Flask tool that converts a YouTube video or playlist link into MP3 file(s).
 
 ⚠️ **Use responsibly.** Only download content you have the rights to —
